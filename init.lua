@@ -56,8 +56,8 @@ local function make_builtin_overrides()
             end
 
             player:set_physics_override({
-                speed   = def.speed   + delta.speed,
-                jump    = def.jump    + delta.jump,
+                speed   = def.speed + delta.speed,
+                jump    = def.jump + delta.jump,
                 gravity = def.gravity + delta.gravity,
             })
         end,
@@ -69,8 +69,8 @@ local function make_builtin_overrides()
 
             if ovr then
                 player:set_physics_override({
-                    speed   = def.speed   - ovr.deltas.speed,
-                    jump    = def.jump    - ovr.deltas.jump,
+                    speed = def.speed - ovr.deltas.speed,
+                    jump  = def.jump - ovr.deltas.jump,
                     gravity = def.gravity - ovr.deltas.gravity,
                 })
                 physics_overrides[name] = nil
@@ -89,8 +89,8 @@ if physics == "pova" then
         set = function(player, o)
             local name = player:get_player_name()
             pova.add_override(name, physics_id, {
-                jump    = o.jump or 0,
-                speed   = o.speed,
+                jump = o.jump or 0,
+                speed = o.speed,
                 gravity = o.gravity,
             })
             pova.do_override(player)
