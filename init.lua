@@ -3,8 +3,6 @@ hangglider = {
 }
 local S = hangglider.translator
 
-local has_player_monoids = core.get_modpath("player_monoids")
-local has_pova = core.get_modpath("pova")
 local has_areas = core.get_modpath("areas")
 
 local enable_hud_overlay = core.settings:get_bool("hangglider.enable_hud_overlay", true)
