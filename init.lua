@@ -2,7 +2,8 @@ hangglider = {
 	translator = core.get_translator('hangglider'),
 }
 local S = hangglider.translator
-
+local id_glider = "hangglider:glider"
+local id_hangglider = "hangglider:hangglider"
 local has_areas = core.get_modpath("areas")
 
 local enable_hud_overlay = core.settings:get_bool("hangglider.enable_hud_overlay", true)
@@ -31,7 +32,6 @@ local physics = check_physics_engine()
 -- Empty functions
 local set_physics_overrides
 local remove_physics_overrides
-local physics_id = "hangglider:glider"
 
 -- Filling functions with the proper physics logic.
 local function make_builtin_overrides()
@@ -88,7 +88,7 @@ if physics == "pova" then
     overrides = {
         set = function(player, o)
             local name = player:get_player_name()
-            pova.add_override(name, physics_id, {
+            pova.add_override(name, id_glider, {
                 jump = o.jump or 0,
                 speed = o.speed,
                 gravity = o.gravity,
@@ -96,7 +96,7 @@ if physics == "pova" then
             pova.do_override(player)
         end,
         remove = function(player)
-            pova.del_override(player:get_player_name(), physics_id)
+            pova.del_override(player:get_player_name(), id_glider)
             pova.do_override(player)
         end,
     }
@@ -104,12 +104,12 @@ elseif physics == "monoids" then
     overrides = {
         set = function(player, o)
             for k, v in pairs(o) do
-                player_monoids[k]:add_change(player, v, physics_id)
+                player_monoids[k]:add_change(player, v, id_glider)
             end
         end,
         remove = function(player)
             for _, k in ipairs({ "jump", "speed", "gravity" }) do
-                player_monoids[k]:del_change(player, physics_id)
+                player_monoids[k]:del_change(player, id_glider)
             end
         end,
     }
@@ -168,7 +168,6 @@ local function set_hud_overlay(player, name, show)
 		hud_overlay_ids[name] = nil
 	end
 end
-
 
 local function can_fly(pos, name)
 	if not enable_flak then
@@ -249,7 +248,7 @@ local function hangglider_step(self, dtime)
 				end
 				if self.flak_timer > flak_warning_time then
 					player:set_hp(1, {type = "set_hp", cause = "hangglider:flak"})
-					player:get_inventory():remove_item("main", ItemStack("hangglider:hangglider"))
+					player:get_inventory():remove_item("main", ItemStack(id_hangglider))
 					shoot_flak_sound(pos)
 					gliding = false
 				end
@@ -275,7 +274,7 @@ local function hangglider_use(stack, player)
 	local name = player:get_player_name()
 	if not hanggliding_players[name] then
 		core.sound_play("hangglider_equip", {pos = pos, max_hear_distance = 8, gain = 1.0}, true)
-		local entity = core.add_entity(pos, "hangglider:glider")
+		local entity = core.add_entity(pos, id_glider)
 		if entity then
 			entity:set_attach(player, "", vector.new(0, 10, 0), vector.new(0, 0, 0))
 			local color = stack:get_meta():get("hangglider_color")
@@ -321,7 +320,7 @@ core.register_on_player_hpchange(function(player, hp_change, reason)
 	return hp_change
 end, true)
 
-core.register_entity("hangglider:glider", {
+core.register_entity(id_glider, {
 	initial_properties = {
 		visual = "mesh",
 		visual_size = {x = 12, y = 12},
@@ -334,7 +333,7 @@ core.register_entity("hangglider:glider", {
 	on_step = hangglider_step,
 })
 
-core.register_tool("hangglider:hangglider", {
+core.register_tool(id_hangglider, {
 	description = S("Glider"),
 	inventory_image = "hangglider_item.png",
 	sound = {breaks = "default_tool_breaks"},
