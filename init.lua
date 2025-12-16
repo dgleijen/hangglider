@@ -34,8 +34,6 @@ local remove_physics_overrides
 local physics_id = "hangglider:glider"
 
 -- Filling functions with the proper physics logic.
-local physics_overrides = {}
-
 local function make_builtin_overrides()
     return {
         set = function(player, overrides)
