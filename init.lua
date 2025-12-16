@@ -274,7 +274,7 @@ local function hangglider_use(stack, player)
 	local pos = player:get_pos()
 	local name = player:get_player_name()
 	if not hanggliding_players[name] then
-		core.sound_play("hanggliger_equip", {pos = pos, max_hear_distance = 8, gain = 1.0}, true)
+		core.sound_play("hangglider_equip", {pos = pos, max_hear_distance = 8, gain = 1.0}, true)
 		local entity = core.add_entity(pos, "hangglider:glider")
 		if entity then
 			entity:set_attach(player, "", vector.new(0, 10, 0), vector.new(0, 0, 0))
