@@ -314,7 +314,6 @@ end)
 core.register_on_player_hpchange(function(player, hp_change, reason)
 	local name = player:get_player_name()
 	if hanggliding_players[name] and reason.type == "fall" then
-		-- Stop all fall damage when hanggliding
 		return 0, true
 	end
 	return hp_change
