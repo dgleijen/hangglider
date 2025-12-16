@@ -78,7 +78,7 @@ local function make_builtin_overrides()
     }
 end
 
-local overrides = (PHYSICS_ENGINE == "pova" and {
+local overrides = (physics == "pova" and {
     set = function(player, o)
         local name = player:get_player_name()
         pova.add_override(name, physics_id, {jump=o.jump or 0, speed=o.speed, gravity=o.gravity})
@@ -88,7 +88,7 @@ local overrides = (PHYSICS_ENGINE == "pova" and {
         pova.del_override(player:get_player_name(), physics_id)
         pova.do_override(player)
     end
-}) or (PHYSICS_ENGINE == "monoids" and {
+}) or (physics == "monoids" and {
     set = function(player, o)
         for k,v in pairs(o) do player_monoids[k]:add_change(player, v, physics_id) end
     end,
