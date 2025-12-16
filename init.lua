@@ -1,4 +1,3 @@
-
 hangglider = {
 	translator = core.get_translator('hangglider'),
 }
@@ -21,6 +20,96 @@ local hanggliding_players = {}
 local physics_overrides = {}
 local hud_overlay_ids = {}
 
+local function check_physics_engine()
+    if core.get_modpath("pova") then
+        return "pova"
+    elseif core.get_modpath("player_monoids") then
+        return "monoids"
+    end
+end
+
+local physics = check_physics_engine()
+
+-- Empty functions
+local set_physics_overrides
+local remove_physics_overrides
+local physics_id = "hangglider:glider"
+
+-- Filling functions with the proper physics logic.
+if PHYSICS_ENGINE == "pova" then
+    set_physics_overrides = function(player, overrides)
+        local player_name = player:get_player_name()
+        pova.add_override(player_name, physics_id, {
+            jump    = overrides.jump or 0,
+            speed   = overrides.speed,
+            gravity = overrides.gravity,
+        })
+        pova.do_override(player)
+    end
+    remove_physics_overrides = function(player)
+        local player_name = player:get_player_name()
+        pova.del_override(player_name, physics_id)
+        pova.do_override(player)
+    end
+elseif PHYSICS_ENGINE == "monoids" then
+    set_physics_overrides = function(player, overrides)
+        for key, value in pairs(overrides) do
+            player_monoids[key]:add_change(player, value, physics_id)
+        end
+    end
+    remove_physics_overrides = function(player)
+        for _, key in pairs({"jump", "speed", "gravity"}) do
+            player_monoids[key]:del_change(player, physics_id)
+        end
+    end
+else
+    set_physics_overrides = function(player, overrides)
+		local def = player:get_physics_override()
+		if not physics_overrides[player_name] then
+			physics_overrides[player_name] = {
+				physics = {
+					speed = def.speed,
+					jump = def.jump,
+					gravity = def.gravity,
+				},
+				deltas = {speed = 0, jump = 0, gravity = 0},
+			}
+		end
+		-- Compute the new delta to apply (relative to current physics)
+		local delta = {
+			speed = (overrides.speed or def.speed) - def.speed,
+			jump = (overrides.jump or def.jump) - def.jump,
+			gravity = (overrides.gravity or def.gravity) - def.gravity,
+		}
+		-- Track the sum of all deltas for this session.
+		physics_overrides[player_name].deltas.speed = physics_overrides[player_name].deltas.speed + delta.speed
+		physics_overrides[player_name].deltas.jump = physics_overrides[player_name].deltas.jump + delta.jump
+		physics_overrides[player_name].deltas.gravity = physics_overrides[player_name].deltas.gravity + delta.gravity
+		-- Apply new delta on top of current physics
+		player:set_physics_override({
+			speed = def.speed + delta.speed,
+			jump = def.jump + delta.jump,
+			gravity = def.gravity + delta.gravity,
+		})
+    end
+    remove_physics_overrides = function(player)
+		local def = player:get_physics_override()
+		if physics_overrides[player_name]
+			and physics_overrides[player_name].physics
+			and physics_overrides[player_name].deltas then
+
+			-- Subtract total delta from current values
+			player:set_physics_override({
+				speed = def.speed - physics_overrides[player_name].deltas.speed,
+				jump = def.jump - physics_overrides[player_name].deltas.jump,
+				gravity = def.gravity - physics_overrides[player_name].deltas.gravity,
+			})
+			physics_overrides[player_name] = nil
+		else
+			player:set_physics_override({speed = 1, jump = 1, gravity = 1})
+		end
+    end
+end
 
 if enable_flak then
 	core.register_chatcommand("area_flak", {
@@ -71,74 +160,6 @@ local function set_hud_overlay(player, name, show)
 	end
 end
 
-local function set_physics_overrides(player, overrides)
-	local player_name = player:get_player_name()
-	if has_player_monoids then
-		for name, value in pairs(overrides) do
-			player_monoids[name]:add_change(player, value, "hangglider:glider")
-		end
-	elseif has_pova then
-		pova.add_override(player_name, "hangglider:glider",
-				{jump = 0, speed = overrides.speed, gravity = overrides.gravity})
-		pova.do_override(player)
-	else
-		local def = player:get_physics_override()
-		if not physics_overrides[player_name] then
-			physics_overrides[player_name] = {
-				physics = {
-					speed = def.speed,
-					jump = def.jump,
-					gravity = def.gravity,
-				},
-				deltas = {speed = 0, jump = 0, gravity = 0},
-			}
-		end
-		-- Compute the new delta to apply (relative to current physics)
-		local delta = {
-			speed = (overrides.speed or def.speed) - def.speed,
-			jump = (overrides.jump or def.jump) - def.jump,
-			gravity = (overrides.gravity or def.gravity) - def.gravity,
-		}
-		-- Track the sum of all deltas for this session.
-		physics_overrides[player_name].deltas.speed = physics_overrides[player_name].deltas.speed + delta.speed
-		physics_overrides[player_name].deltas.jump = physics_overrides[player_name].deltas.jump + delta.jump
-		physics_overrides[player_name].deltas.gravity = physics_overrides[player_name].deltas.gravity + delta.gravity
-		-- Apply new delta on top of current physics
-		player:set_physics_override({
-			speed = def.speed + delta.speed,
-			jump = def.jump + delta.jump,
-			gravity = def.gravity + delta.gravity,
-		})
-	end
-end
-
-local function remove_physics_overrides(player)
-	local player_name = player:get_player_name()
-	if has_player_monoids then
-		for _, name in pairs({"jump", "speed", "gravity"}) do
-			player_monoids[name]:del_change(player, "hangglider:glider")
-		end
-	elseif has_pova then
-		pova.del_override(player_name, "hangglider:glider")
-		pova.do_override(player)
-	else
-		local def = player:get_physics_override()
-		if physics_overrides[player_name]
-			and physics_overrides[player_name].physics
-			and physics_overrides[player_name].deltas then
-
-			-- Subtract total delta from current values
-			player:set_physics_override({
-				speed = def.speed - physics_overrides[player_name].deltas.speed,
-				jump = def.jump - physics_overrides[player_name].deltas.jump,
-				gravity = def.gravity - physics_overrides[player_name].deltas.gravity,
-			})
-			physics_overrides[player_name] = nil
-		else
-			player:set_physics_override({speed = 1, jump = 1, gravity = 1})
-		end
-	end
-end
 
 local function can_fly(pos, name)
 	if not enable_flak then
