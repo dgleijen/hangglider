@@ -119,7 +119,7 @@ else
     overrides = make_builtin_overrides()
 end
 
-set_physics_overrides    = overrides.set
+set_physics_overrides = overrides.set
 remove_physics_overrides = overrides.remove
 
 if enable_flak then
