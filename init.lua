@@ -41,14 +41,14 @@ local function make_builtin_overrides()
             local def = player:get_physics_override()
 
             physics_overrides[name] = physics_overrides[name] or {
-                base   = {speed = def.speed, jump = def.jump, gravity = def.gravity},
-                deltas = {speed = 0, jump = 0, gravity = 0},
+                base   = { speed = def.speed, jump = def.jump, gravity = def.gravity },
+                deltas = { speed = 0, jump = 0, gravity = 0 },
             }
 
             local delta = {
-                speed   = (overrides.speed or def.speed) - def.speed,
-                jump    = (overrides.jump or def.jump) - def.jump,
-                gravity = (overrides.gravity or def.gravity) - def.gravity,
+                speed   = ( overrides.speed or def.speed ) - def.speed,
+                jump    = ( overrides.jump or def.jump ) - def.jump,
+                gravity = ( overrides.gravity or def.gravity ) - def.gravity,
             }
 
             for k, v in pairs(delta) do
