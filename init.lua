@@ -34,34 +34,41 @@ local remove_physics_overrides
 local physics_id = "hangglider:glider"
 
 -- Filling functions with the proper physics logic.
+local physics_overrides = {}
+
 local function make_builtin_overrides()
-    local physics_overrides = {}
     return {
         set = function(player, overrides)
             local name = player:get_player_name()
             local def = player:get_physics_override()
+
             physics_overrides[name] = physics_overrides[name] or {
-                physics = {speed = def.speed, jump = def.jump, gravity = def.gravity},
-                deltas  = {speed = 0, jump = 0, gravity = 0},
+                base   = {speed = def.speed, jump = def.jump, gravity = def.gravity},
+                deltas = {speed = 0, jump = 0, gravity = 0},
             }
+
             local delta = {
                 speed   = (overrides.speed or def.speed) - def.speed,
                 jump    = (overrides.jump or def.jump) - def.jump,
                 gravity = (overrides.gravity or def.gravity) - def.gravity,
             }
-            for k,v in pairs(delta) do
+
+            for k, v in pairs(delta) do
                 physics_overrides[name].deltas[k] = physics_overrides[name].deltas[k] + v
             end
+
             player:set_physics_override({
                 speed   = def.speed   + delta.speed,
                 jump    = def.jump    + delta.jump,
                 gravity = def.gravity + delta.gravity,
             })
         end,
+
         remove = function(player)
             local name = player:get_player_name()
             local def = player:get_physics_override()
             local ovr = physics_overrides[name]
+
             if ovr then
                 player:set_physics_override({
                     speed   = def.speed   - ovr.deltas.speed,
@@ -69,33 +76,50 @@ local function make_builtin_overrides()
                     gravity = def.gravity - ovr.deltas.gravity,
                 })
                 physics_overrides[name] = nil
-            else
-                player:set_physics_override({speed=1, jump=1, gravity=1})
-            end
+			else
+			    player:set_physics_override({ speed = 1, jump = 1, gravity = 1 })
+			end
+
         end
     }
 end
 
-local overrides = (physics == "pova" and {
-    set = function(player, o)
-        local name = player:get_player_name()
-        pova.add_override(name, physics_id, {jump=o.jump or 0, speed=o.speed, gravity=o.gravity})
-        pova.do_override(player)
-    end,
-    remove = function(player)
-        pova.del_override(player:get_player_name(), physics_id)
-        pova.do_override(player)
-    end
-}) or (physics == "monoids" and {
-    set = function(player, o)
-        for k,v in pairs(o) do player_monoids[k]:add_change(player, v, physics_id) end
-    end,
-    remove = function(player)
-        for _,k in ipairs({"jump","speed","gravity"}) do player_monoids[k]:del_change(player, physics_id) end
-    end
-}) or make_builtin_overrides()
+local overrides
 
-set_physics_overrides   = overrides.set
+if physics == "pova" then
+    overrides = {
+        set = function(player, o)
+            local name = player:get_player_name()
+            pova.add_override(name, physics_id, {
+                jump    = o.jump or 0,
+                speed   = o.speed,
+                gravity = o.gravity,
+            })
+            pova.do_override(player)
+        end,
+        remove = function(player)
+            pova.del_override(player:get_player_name(), physics_id)
+            pova.do_override(player)
+        end,
+    }
+elseif physics == "monoids" then
+    overrides = {
+        set = function(player, o)
+            for k, v in pairs(o) do
+                player_monoids[k]:add_change(player, v, physics_id)
+            end
+        end,
+        remove = function(player)
+            for _, k in ipairs({ "jump", "speed", "gravity" }) do
+                player_monoids[k]:del_change(player, physics_id)
+            end
+        end,
+    }
+else
+    overrides = make_builtin_overrides()
+end
+
+set_physics_overrides    = overrides.set
 remove_physics_overrides = overrides.remove
 
 if enable_flak then
